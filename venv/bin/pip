@@ -1,4 +1,4 @@
-#!/home/dev/workspace/projeto_loja/cadastro_visitas/venv/bin/python3
+#!/home/dev/workspace/projeto_loja/cadastro-visitas-backend/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

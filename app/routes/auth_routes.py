@@ -1,14 +1,41 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, make_response
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from app.models import User
 from app.extensions import db
 
 bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
+def handle_options_request():
+    response = make_response()
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
+
+@bp.route('/verify', methods=['GET', 'OPTIONS'])
+@jwt_required(optional=True)
+def verify():
+    if request.method == 'OPTIONS':
+        return handle_options_request()
+    
+    try:
+        user_id = get_jwt_identity()
+        if not user_id:
+            return jsonify({'error': 'Token inválido'}), 401
+            
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'Usuário não encontrado'}), 401
+            
+        return jsonify({'message': 'Token válido', 'user': user.to_dict()}), 200
+    except Exception as e:
+        print(f"Erro na verificação do token: {str(e)}")
+        return jsonify({'error': 'Token inválido'}), 401
+
 @bp.route('/register', methods=['POST', 'OPTIONS'])
 def register():
     if request.method == 'OPTIONS':
-        return '', 200
+        return handle_options_request()
         
     data = request.get_json()
     
@@ -50,9 +77,12 @@ def register():
 @bp.route('/login', methods=['POST', 'OPTIONS'])
 def login():
     if request.method == 'OPTIONS':
-        return '', 200
+        return handle_options_request()
         
     try:
+        print("Recebida requisição POST para /login")
+        print("Headers:", dict(request.headers))
+        
         if not request.is_json:
             print("Requisição não contém JSON")
             return jsonify({'error': 'O conteúdo deve ser JSON'}), 400
@@ -84,12 +114,13 @@ def login():
         user_dict = user.to_dict()
         print(f"Dados do usuário: {user_dict}")
         
-        response = jsonify({
+        response_data = {
             'access_token': access_token,
             'user': user_dict
-        })
+        }
         
-        print(f"Resposta enviada: {response.get_json()}")
+        response = jsonify(response_data)
+        print(f"Resposta enviada: {response_data}")
         return response, 200
     except Exception as e:
         print(f"Erro no login: {str(e)}")
@@ -99,7 +130,7 @@ def login():
 @jwt_required(locations=['headers'], fresh=False)
 def get_current_user():
     if request.method == 'OPTIONS':
-        return '', 200
+        return handle_options_request()
         
     try:
         user_id = get_jwt_identity()

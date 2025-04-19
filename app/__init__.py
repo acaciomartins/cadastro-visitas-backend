@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from datetime import timedelta
 import os
@@ -106,20 +106,17 @@ def create_app(config_class=Config):
     # Configurar CORS - Permitir todas as origens durante o desenvolvimento
     CORS(app, resources={
         r"/api/*": {
-            "origins": [
-                "http://localhost:3000",
-                "http://localhost:3001",
-                "http://localhost:3002",
-                "http://localhost:3003",
-                "http://localhost:3004",
-                "http://localhost:3005"
-            ],
+            "origins": "*",
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"],
-            "supports_credentials": True,
+            "allow_headers": ["Content-Type", "Authorization", "Accept"],
             "expose_headers": ["Content-Type", "Authorization"]
         }
     })
+    
+    # Health check endpoint
+    @app.route('/api/health')
+    def health_check():
+        return jsonify({'status': 'ok'}), 200
     
     # Inicializar extensões
     init_extensions(app)
